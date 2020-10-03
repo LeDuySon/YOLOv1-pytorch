@@ -9,6 +9,12 @@ device = torch.device(device)
 
 class TransitionL(nn.Module):
     def __init__(self, in_features, out_features):
+        """[summary]
+
+        Args:
+            in_features ([type]): [description]
+            out_features ([type]): [description]
+        """
         super(TransitionL, self).__init__()
         self.transit = nn.Sequential(
             nn.BatchNorm2d(in_features),
@@ -19,7 +25,17 @@ class TransitionL(nn.Module):
         return self.transit(x)
     
 class _DenseLayer(nn.Module):
+    
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate, memory_efficient=False):
+        """[summary]
+
+        Args:
+            num_input_features ([type]): [description]
+            growth_rate ([type]): [description]
+            bn_size ([type]): [description]
+            drop_rate ([type]): [description]
+            memory_efficient (bool, optional): [description]. Defaults to False.
+        """
         super(_DenseLayer, self).__init__()
         self.add_module('norm1', nn.BatchNorm2d(num_input_features)),
         self.add_module('relu1', nn.ReLU(inplace=True)),
@@ -56,6 +72,16 @@ class _DenseLayer(nn.Module):
     
 class _DenseBlock(nn.ModuleDict):
     def __init__(self, num_layers, num_input_features, bn_size, growth_rate, drop_rate, memory_efficient=False):
+        """[summary]
+
+        Args:
+            num_layers ([type]): [description]
+            num_input_features ([type]): [description]
+            bn_size ([type]): [description]
+            growth_rate ([type]): [description]
+            drop_rate ([type]): [description]
+            memory_efficient (bool, optional): [description]. Defaults to False.
+        """
         super(_DenseBlock, self).__init__()
         for i in range(num_layers):
             layer = _DenseLayer(
@@ -77,10 +103,19 @@ class _DenseBlock(nn.ModuleDict):
 class DenseNet(nn.Module):
     def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16),
                  num_init_features=64, bn_size=4, drop_rate=0, memory_efficient=False):
+        """Densenet
+
+        Args:
+            growth_rate (int, optional): Num channel stack. Defaults to 32.
+            block_config (tuple, optional): Num layers each block. Defaults to (6, 12, 24, 16).
+            num_init_features (int, optional): input features map. Defaults to 64.
+            bn_size (int, optional): bottleneck params. Defaults to 4.
+            drop_rate (int, optional): trigger dropout > 0. Defaults to 0.
+            memory_efficient (bool, optional): saving memory. Defaults to False.
+        """
 
         super(DenseNet, self).__init__()
 
-        # Convolution and pooling part from table-1
         self.features = nn.Sequential(OrderedDict([
             ('conv0', nn.Conv2d(3, num_init_features, kernel_size=7, stride=2,
                                 padding=3, bias=False)),
@@ -90,7 +125,6 @@ class DenseNet(nn.Module):
         ]))
 
         # Add multiple denseblocks based on config 
-        # for densenet-121 config: [6,12,24,16]
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
             block = _DenseBlock(
@@ -112,7 +146,6 @@ class DenseNet(nn.Module):
                 num_features = num_features // 2
 
         self.lastconv = nn.Conv2d(num_features, num_features, 1, 2)
-        # Official init from torch repo.
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight)
@@ -128,6 +161,11 @@ class DenseNet(nn.Module):
         return features_map
 
 class YOLOD(nn.Module):
+    """[summary]
+
+    Args:
+        nn ([type]): [description]
+    """
     def __init__(self):
         super(YOLOD, self).__init__()
         self.feature_extractor = DenseNet()
