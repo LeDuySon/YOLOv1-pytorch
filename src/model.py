@@ -190,7 +190,27 @@ class YOLOD(nn.Module):
         linear_vec = self.linear_layers(flatten)
         output = linear_vec.view(-1, self.grid, self.grid, self.num_classes + B*5)
         return output
+
+class testloss(nn.Module):
+    def __init__(self):
+        super(testloss, self).__init__()
+        self.l = nn.Linear(4, 8)
+        self.l1 = nn.Linear(8, 16)
+        self.re = nn.ReLU(inplace=True)
+        self.l3 = nn.Linear(16, 33)
+    def forward(self, x):
+        features = self.l(x)
+        features = self.re(features)
+        features = self.l1(features)
+        features = self.re(features)
+        features = self.l3(features)
+        # features = F.sigmoid(features)
+        return features.view(1, 1, 3, 11)
     
 if __name__ == '__main__':
-    yoloS = YOLOD()
-    print(yoloS(torch.ones([2, 3, 448, 448])).shape)
+    # yoloS = YOLOD()
+    # print(yoloS(torch.ones([2, 3, 448, 448])).shape)
+    test = testloss()
+    
+    print(test(s))
+    

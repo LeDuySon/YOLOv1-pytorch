@@ -52,27 +52,10 @@ class GlobalWheatData(Dataset):
         box_coord = df[["image_id", "bbox"]].groupby("image_id")["bbox"].apply(list).reset_index()
         mapDict = {k:v for k, v in zip(box_coord["image_id"], box_coord["bbox"])}
         N = len(mapDict.keys())
-        X = np.zeros((N, self.img_size, self.img_size, 3), dtype='uint8')
         for idx, (id, boxes) in enumerate(mapDict.items()):
             image_name = self.image_link + "/" + id + ".jpg"
-            X = Image.open(image_name)
-            img_tensor = self.preprocess_img(X)            
-            y = np.zeros((S, S, 5*B+ C))
-            for i, box in enumerate(boxes):
-                box = json.loads(box)
-                xmin, ymin, w, h = box[0], box[1], box[2], box[3]
-                # convert coord from 1024 image size to 448 image size
-                # xmin, ymin, w, h = xmin/self.wheat_size * 448, ymin/1024 * 448, w/1024 * 448, h/1024 * 448
-                x_center, y_center = (xmin+w)/2, (ymin+h)/2
-                x_center, y_center, w, h, x_idx, y_idx = self.convert_coord(x_center, y_center, w, h) 
-                # x_idx, y_idx = int(x_center/self.img_size * S), int(y_center/self.img_size * S)
-                y[x_idx, y_idx] = 1, x_center, y_center, w, h, 1, x_center, y_center, w, h, 1
-            print(idx)
-            if(idx == 100):
-                break
-            y_tensor = torch.from_numpy(y)
-            self.data_x.append(img_tensor)
-            self.data_y.append(y_tensor)
+            self.data_x.append(image_name)
+            self.data_y.append(boxes)
     def convert_coord(self, *box):
         x, y, w, h = box
         x_norm, y_norm = x/self.wheat_size, y/self.wheat_size
@@ -102,17 +85,33 @@ class GlobalWheatData(Dataset):
             X: (tensor) ->  3*448*448
             y: (tensor) -> (S*S*(5+C)): 5+C: confidence, x, y, w, h, class_prob
         """
-        X = self.data_x[idx]
-        y = self.data_y[idx]
-        return X, y
+        image_name = self.data_x[idx]
+        boxes = self.data_y[idx]
+        X = Image.open(image_name)
+        img_tensor = self.preprocess_img(X)
+        # class_prob = torch.zeros(C)            
+        y = np.zeros((S, S, 5*B + C))
+        for i, box in enumerate(boxes):
+            box = json.loads(box)
+            xmin, ymin, w, h = box[0], box[1], box[2], box[3]
+            x_center, y_center = (xmin+w)/2, (ymin+h)/2
+            x_center, y_center, w, h, x_idx, y_idx = self.convert_coord(x_center, y_center, w, h) 
+            y[x_idx, y_idx] = 1, x_center, y_center, w, h, 1, x_center, y_center, w, h, 1
+        y_tensor = torch.from_numpy(y)
+
+        # X = self.data_x[idx]
+        # y = self.data_y[idx]
+        return img_tensor, y_tensor
     
     def __len__(self):
         return len(self.data_x)
 
 if __name__ == '__main__':
     dt = GlobalWheatData(link, image_link, preprocess)
+    
     # print(dt[0])
     train_data = torch.utils.data.DataLoader(dt, batch_size = 8, shuffle = True)
     testing_x, testing_y = next(iter(train_data))
     test_grid = torchvision.utils.make_grid(testing_x)
+    print(testing_y)
     imshow(test_grid)
