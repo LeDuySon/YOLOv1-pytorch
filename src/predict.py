@@ -7,13 +7,14 @@ import time
 from data import preprocess
 from visualise import showrect
 import glob
+from utils import convertxcyc_xmym
 start = time.time()
 checkpoint = torch.load("best_model_2.pth")
 model = YOLOD()
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 print(time.time() - start)
-image_link = "../../yolo-pytorch/data/global-wheat-detection/train/0a3cb453f.jpg"
+image_link = "../../yolo-pytorch/data/global-wheat-detection/test/0a3cb453f.jpg"
 
 def predict(model, image):
     img = Image.open(image)
@@ -23,7 +24,9 @@ def predict(model, image):
     boxes, prob = decode_output(output_tensor)
     print(boxes)
     box_in = [c for i in boxes for c in i]
-    print(box_in[0])
+    print(box_in)
+    for i in range(len(box_in)):
+        box_in[i] =  convertxcyc_xmym(box_in[i])
     showrect(image, box_in)
 
     
@@ -48,10 +51,11 @@ def decode_output(pred_tensor, threshold = 0.1, init_size = 1024):
             cbox_mask = cbox[:, 0] > threshold
             print(cbox_mask)
             cbox = cbox[cbox_mask]
-            cbox[:, 1] = cbox[:, 1] + i * init_size
-            cbox[:, 2] = cbox[:, 2] + j * init_size
+            # cbox[cbox < 0] = 0
+            cbox[:, 1] = (cbox[:, 1] + i) * init_size
+            cbox[:, 2] = (cbox[:, 2] + j) * init_size
             cbox[:, 3:] = cbox[:, 3:] * init_size
-            boxes.append(cbox.detach().numpy()) 
+            boxes.append(cbox[:, 1:].detach().numpy()) 
             probC.append(torch.argmax(class_tensor[i][j]).numpy())
     return boxes, probC
             

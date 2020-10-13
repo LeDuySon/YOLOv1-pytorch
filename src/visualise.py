@@ -18,7 +18,7 @@ def showrect(image_fn, bbox):
     bbox_draw = ImageDraw.Draw(bbox_canvas)
     for box in bbox:
         x, y, w, h = box[0], box[1], box[2], box[3]
-        bbox_draw.rectangle((x, y, x+w, y+h), fill=(255, 255, 255, 0), outline=(255, 0, 0, 255))
+        bbox_draw.rectangle((x, y, x+w, y+h), fill=(255, 255, 255, 0), outline=(255, 0, 0, 255), width = 5)
     img = Image.alpha_composite(img, bbox_canvas)
     img = img.convert("RGB") # Remove alpha for saving in jpg format.
     viz_img = np.asarray(img)

@@ -7,7 +7,10 @@ import json
 from PIL import Image
 from config import C, S, B # C: num classes, S: Grid_size
 import numpy as np
-from visualise import imshow
+from visualise import imshow   
+from torch.utils.tensorboard import SummaryWriter
+
+
 
 
 
@@ -64,7 +67,7 @@ class GlobalWheatData(Dataset):
         loc_y = int(loc[1])
         x = loc[0] - loc_x
         y = loc[1] - loc_y
-        w, h = w/self.img_size, h/self.img_size
+        w, h = w/self.wheat_size, h/self.wheat_size
         return x, y, w, h, loc_x, loc_y
         
     def preprocess_img(self, img):
@@ -115,3 +118,6 @@ if __name__ == '__main__':
     test_grid = torchvision.utils.make_grid(testing_x)
     print(testing_y)
     imshow(test_grid)
+    writer = SummaryWriter('runs')
+    writer.add_image('globalwheatimg', test_grid)   
+    
