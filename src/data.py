@@ -7,17 +7,16 @@ import json
 from PIL import Image
 from config import C, S, B # C: num classes, S: Grid_size
 import numpy as np
-from visualise import imshow   
+from visualise import imshow, showrect 
 from torch.utils.tensorboard import SummaryWriter
 
-
+from infer import decode_output
+from utils import convertxcyc_xmym
 
 
 
 preprocess = {"train": transforms.Compose([
     transforms.Resize(448),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomVerticalFlip(),
     transforms.ToTensor(),]),
                "test": transforms.Compose([
     transforms.Resize(448),
@@ -50,6 +49,7 @@ class GlobalWheatData(Dataset):
         self.data_x = []
         self.data_y = []
         self.load_data()
+        
     def load_data(self):
         df = pd.read_csv(self.file)
         box_coord = df[["image_id", "bbox"]].groupby("image_id")["bbox"].apply(list).reset_index()
@@ -59,8 +59,10 @@ class GlobalWheatData(Dataset):
             image_name = self.image_link + "/" + id + ".jpg"
             self.data_x.append(image_name)
             self.data_y.append(boxes)
+            
     def convert_coord(self, *box):
         x, y, w, h = box
+        # print("x_b, y_b: ", x, y)
         x_norm, y_norm = x/self.wheat_size, y/self.wheat_size
         loc = [S*x_norm, S*y_norm]
         loc_x = int(loc[0])
@@ -68,6 +70,7 @@ class GlobalWheatData(Dataset):
         x = loc[0] - loc_x
         y = loc[1] - loc_y
         w, h = w/self.wheat_size, h/self.wheat_size
+        # print("x, y: ", loc_x, loc_y)
         return x, y, w, h, loc_x, loc_y
         
     def preprocess_img(self, img):
@@ -78,6 +81,7 @@ class GlobalWheatData(Dataset):
         else:
             raise Exception("Wrong mode")
         return return_img
+    
     def __getitem__(self, idx):
         """Generate data
 
@@ -97,14 +101,14 @@ class GlobalWheatData(Dataset):
         for i, box in enumerate(boxes):
             box = json.loads(box)
             xmin, ymin, w, h = box[0], box[1], box[2], box[3]
-            x_center, y_center = (xmin+w)/2, (ymin+h)/2
+            x_center, y_center = xmin+w/2, ymin+h/2
             x_center, y_center, w, h, x_idx, y_idx = self.convert_coord(x_center, y_center, w, h) 
             y[x_idx, y_idx] = 1, x_center, y_center, w, h, 1, x_center, y_center, w, h, 1
         y_tensor = torch.from_numpy(y)
 
         # X = self.data_x[idx]
         # y = self.data_y[idx]
-        return img_tensor, y_tensor
+        return img_tensor, y_tensor, image_name
     
     def __len__(self):
         return len(self.data_x)
@@ -113,11 +117,19 @@ if __name__ == '__main__':
     dt = GlobalWheatData(link, image_link, preprocess)
     
     # print(dt[0])
-    train_data = torch.utils.data.DataLoader(dt, batch_size = 8, shuffle = True)
-    testing_x, testing_y = next(iter(train_data))
-    test_grid = torchvision.utils.make_grid(testing_x)
-    print(testing_y)
-    imshow(test_grid)
-    writer = SummaryWriter('runs')
-    writer.add_image('globalwheatimg', test_grid)   
-    
+    # train_data = torch.utils.data.DataLoader(dt, batch_size = 8, shuffle = True)
+    # testing_x, testing_y = next(iter(train_data))
+    # test_grid = torchvision.utils.make_grid(testing_x)
+    # print(testing_y)
+    # imshow(test_grid)
+    # writer = SummaryWriter('runs')
+    # writer.add_image('globalwheatimg', test_grid)   
+    img_tensor, out_tensor, bo = dt[1]
+    boxes, prob = decode_output(out_tensor)
+    box_in = [c for i in boxes for c in i]
+    for i in range(len(box_in)):
+        box_in[i] =  convertxcyc_xmym(box_in[i])
+    print(box_in)
+    showrect(img_tensor, box_in)
+    print(bo)
+    showrect(img_tensor, list(map(json.loads, bo)))

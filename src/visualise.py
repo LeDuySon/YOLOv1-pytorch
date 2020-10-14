@@ -1,6 +1,7 @@
 import torch 
 import numpy as np
 import matplotlib.pyplot as plt 
+from torchvision.transforms import ToPILImage
 from PIL import Image, ImageDraw 
 import pandas as pd #testing
 import json
@@ -12,8 +13,10 @@ def imshow(img):
     plt.show()
     
 def showrect(image_fn, bbox):
-    img = Image.open(image_fn).convert('RGBA')
-
+    if( isinstance(image_fn, str) ):
+        img = Image.open(image_fn).convert('RGBA')
+    else:
+        img = ToPILImage()(image_fn.squeeze(0))
     bbox_canvas = Image.new('RGBA', img.size)
     bbox_draw = ImageDraw.Draw(bbox_canvas)
     for box in bbox:

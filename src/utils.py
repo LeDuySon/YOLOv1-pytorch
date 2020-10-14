@@ -1,6 +1,6 @@
 import torchvision
 import torchvision.transforms as transforms
-
+import torch
 
 def convertxyxy_xywh(box):
     xmin, ymin, xmax, ymax = box[0], box[1], box[2], box[3]
@@ -18,7 +18,7 @@ def convertxcyc_xmym(box):
     x_c, y_c, w, h = box[0], box[1], box[2], box[3]
     x_m = x_c - w/2
     y_m = y_c - h/2
-    return [x_m, y_m, w, h]
+    return x_m, y_m, w, h
     
     
     

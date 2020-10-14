@@ -174,7 +174,7 @@ class YOLOD(nn.Module):
 
         self.linear_layers = nn.Sequential(
             nn.Linear(S*S*1024, 4096),
-            nn.BatchNorm1d(4096),
+            # nn.BatchNorm1d(4096),
             nn.Dropout(p=0.1), 
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(4096, self.grid*self.grid*(self.num_classes + B*5))
@@ -183,9 +183,7 @@ class YOLOD(nn.Module):
     def forward(self, x):
         features = self.feature_extractor(x)
         flatten = torch.flatten(features)
-        print(flatten.size())
         flatten = flatten.view(x.size()[0], -1)
-        print(flatten.size())
 
         linear_vec = self.linear_layers(flatten)
         output = linear_vec.view(-1, self.grid, self.grid, self.num_classes + B*5)

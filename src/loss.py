@@ -23,10 +23,8 @@ def calc_loss(pred_tensor, target_tensor, num_pred = 11, device = 'cpu'):
     coo_target_tensor = target_tensor[coo_mask] # -> (B*S*S)*(B*5+C)
     
     coo_target_conf = coo_target_tensor[:, 0]
-    print(coo_pred_tensor[..., 1:5])
     # bounding box coord 
     box_pred = torch.cat((coo_pred_tensor[..., 1:5], coo_pred_tensor[..., 6:10]), 1)
-    print(box_pred)
     box_target = torch.cat((coo_target_tensor[..., 1:5], coo_target_tensor[..., 6:10]), 1)
     # print(box_target.shape)
     box_target = box_target.contiguous().view(-1, 4)
@@ -56,13 +54,14 @@ def calc_loss(pred_tensor, target_tensor, num_pred = 11, device = 'cpu'):
         coo_response_mask = torch.cuda.BoolTensor(tmp)
     else:
         coo_response_mask = torch.BoolTensor(tmp)
+        
     response_box = box_pred[coo_response_mask]
     response_box[response_box < 0] = 0
     gt_box = box_target[coo_response_mask]
     iou_resbox = iou_resbox[coo_response_mask]
     coord_loss = F.mse_loss(response_box[:, :2], gt_box[:, :2]) + F.mse_loss(torch.sqrt(response_box[:,2:]), torch.sqrt(gt_box[:,2:]))
     coo_pred_conf = torch.cat((coo_pred_tensor[..., 0].unsqueeze(0).transpose(1, 0), coo_pred_tensor[..., 5].unsqueeze(0).transpose(1, 0)), 1).view(-1, 1)
-    coo_pred_conf_res = coo_pred_conf[coo_response_mask]
+    coo_pred_conf_res = coo_pred_conf[coo_response_mask].squeeze(1)
     coo_conf_loss = F.mse_loss(coo_pred_conf_res, iou_resbox)
              
     # compute classification loss
