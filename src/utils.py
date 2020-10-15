@@ -2,6 +2,13 @@ import torchvision
 import torchvision.transforms as transforms
 import torch
 
+# class BoundingBox(object):
+#     def __init__(self, x, y, width, height):
+#         self.x = x
+#         self.y = y
+#         self.w = width 
+#         self.h = height
+
 def convertxyxy_xywh(box):
     xmin, ymin, xmax, ymax = box[0], box[1], box[2], box[3]
     x_c, y_c = (xmin+xmax)/2, (ymin+ymax)/2
@@ -19,7 +26,7 @@ def convertxcyc_xmym(box):
     x_m = x_c - w/2
     y_m = y_c - h/2
     return x_m, y_m, w, h
-    
+
     
     
     

@@ -42,48 +42,48 @@ class OutputHook:
 def get_hook(model):
   model.conv1.register_forward_hook(hook)
 
-model = YOLOD().to(device)
-# model = testloss()
-model.train()
+# model = YOLOD().to(device)
+model = testloss()
+# model.train()
 optimizers = optim.SGD(model.parameters(), lr = lr, momentum = 0.9)
-isSave = False
-if(isSave):
-    checkpoint = torch.load(SAVE_PATH)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    optimizers.load_state_dict(checkpoint["optimizer_state_dict"])
-    previous_loss = checkpoint["loss"]
-    best_acc = checkpoint["best_acc"]
-# print(f"previous_loss: {previous_loss}")
-image = ""
-for epoch in range(epochs):
-    print("Epoch: " + str(epoch))
-    for i, data in enumerate(train_data):
-        if(i != 0):
-            break
-        X, y, image = data[0].cuda(), data[1].cuda(), data[2]
-        print(image)
-        optimizers.zero_grad()
-        out = model(X)
-        loss = calc_loss(out.float(), y.float(), device = device)
-        print("Loss: %.3f" % (loss))
-        loss.backward()
-        print("test")
-        optimizers.step()
-
-
-predict(model, str(image[0]), True)
-
-# X = torch.Tensor([[0.3, -0.4, -0.3, 0.7], [0.7, 0.2, 0.5, 0.2]])
-# label = [torch.Tensor([[[[1, 0.5, 0.8, 0.3, 0.4, 1, 0.5, 0.8, 0.3, 0.4, 1], [0, 0, 0, 0, 0, 0,0, 0, 0,0, 0], [1, 0.5, 0.8, 0.3, 0.4, 1, 0.5, 0.8, 0.3, 0.4, 1]]]])]
-# for epch in range(epochs):
-#     for x, y in zip(X, label):
+# isSave = False
+# if(isSave):
+#     checkpoint = torch.load(SAVE_PATH)
+#     model.load_state_dict(checkpoint["model_state_dict"])
+#     optimizers.load_state_dict(checkpoint["optimizer_state_dict"])
+#     previous_loss = checkpoint["loss"]
+#     best_acc = checkpoint["best_acc"]
+# # print(f"previous_loss: {previous_loss}")
+# image = ""
+# for epoch in range(epochs):
+#     print("Epoch: " + str(epoch))
+#     for i, data in enumerate(train_data):
+#         if(i != 0):
+#             break
+#         X, y, image = data[0].cuda(), data[1].cuda(), data[2]
+#         print(image)
 #         optimizers.zero_grad()
-#         out = model(x)
-#         loss = calc_loss(out, y)
+#         out = model(X)
+#         loss = calc_loss(out.float(), y.float(), device = device)
+#         print("Loss: %.3f" % (loss))
 #         loss.backward()
-#         print("Loss: %.3f" % loss)
+#         print("test")
 #         optimizers.step()
-#         print(x, "---> ", out)
+
+
+# predict(model, str(image[0]), True)
+
+X = torch.Tensor([[0.3, -0.4, -0.3, 0.7], [0.7, 0.2, 0.5, 0.2]])
+label = [torch.Tensor([[[[1, 0.5, 0.8, 0.3, 0.4, 1, 0.5, 0.8, 0.3, 0.4, 1], [0, 0, 0, 0, 0, 0,0, 0, 0,0, 0], [1, 0.5, 0.8, 0.3, 0.4, 1, 0.5, 0.8, 0.3, 0.4, 1]]]])]
+for epch in range(epochs):
+    for x, y in zip(X, label):
+        optimizers.zero_grad()
+        out = model(x)
+        loss = calc_loss(out, y)
+        loss.backward()
+        print("Loss: %.3f" % loss)
+        optimizers.step()
+        print(x, "---> ", out)
         
 
     

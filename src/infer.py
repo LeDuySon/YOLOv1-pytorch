@@ -60,8 +60,8 @@ def decode_output(pred_tensor, threshold = 0.1, init_size = 1024):
             # cbox[cbox < 0] = 0
             if(cbox.shape[0] == 0):
                 continue
-            cbox[:, 1] = (cbox[:, 1] + i)/S * init_size
-            cbox[:, 2] = (cbox[:, 2] + j)/S * init_size
+            cbox[:, 1] = (cbox[:, 1] + j)/S * init_size
+            cbox[:, 2] = (cbox[:, 2] + i)/S * init_size
             cbox[:, 3:] = cbox[:, 3:] * init_size
             boxes.append(cbox[:, 1:].detach().cpu().numpy().tolist()) 
             probC.append(torch.argmax(class_tensor[i][j]).cpu().numpy())

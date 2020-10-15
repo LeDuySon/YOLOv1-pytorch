@@ -103,12 +103,12 @@ class GlobalWheatData(Dataset):
             xmin, ymin, w, h = box[0], box[1], box[2], box[3]
             x_center, y_center = xmin+w/2, ymin+h/2
             x_center, y_center, w, h, x_idx, y_idx = self.convert_coord(x_center, y_center, w, h) 
-            y[x_idx, y_idx] = 1, x_center, y_center, w, h, 1, x_center, y_center, w, h, 1
+            y[y_idx, x_idx] = 1, x_center, y_center, w, h, 1, x_center, y_center, w, h, 1
         y_tensor = torch.from_numpy(y)
 
         # X = self.data_x[idx]
         # y = self.data_y[idx]
-        return img_tensor, y_tensor, image_name
+        return img_tensor, y_tensor
     
     def __len__(self):
         return len(self.data_x)
@@ -120,10 +120,17 @@ if __name__ == '__main__':
     # train_data = torch.utils.data.DataLoader(dt, batch_size = 8, shuffle = True)
     # testing_x, testing_y = next(iter(train_data))
     # test_grid = torchvision.utils.make_grid(testing_x)
+    
     # print(testing_y)
-    # imshow(test_grid)
-    # writer = SummaryWriter('runs')
-    # writer.add_image('globalwheatimg', test_grid)   
+    
+    # writer = SummaryWriter()
+    # # writer.add_image('my_image_HWC', img_HWC, 0, dataformats='HWC')
+
+    # # writer.add_image('my_image', img, 0)
+    # # imshow(test_grid)
+    # writer.add_image('my_image', test_grid)
+    
+    # writer.close()
     img_tensor, out_tensor, bo = dt[1]
     boxes, prob = decode_output(out_tensor)
     box_in = [c for i in boxes for c in i]
