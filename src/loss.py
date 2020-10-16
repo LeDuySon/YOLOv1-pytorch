@@ -1,7 +1,7 @@
 import torch.nn.functional as F 
 import torch 
 import torch.nn as nn
-from config import noobject_scale, coord_scale
+from config import noobject_scale, coord_scale, S
 def calc_loss(pred_tensor, target_tensor, num_pred = 11, device = 'cpu'):
     """calculate loss func
 
@@ -11,21 +11,26 @@ def calc_loss(pred_tensor, target_tensor, num_pred = 11, device = 'cpu'):
     """
     
     #classification loss
+    num_grid = S
     num_batch = pred_tensor.shape[0]
     coo_mask = target_tensor[..., 0] == 1 # -> B*S*S
     noo_mask = target_tensor[..., 0] == 0 # -> B*S*S
     
     noo_pred_tensor = pred_tensor[noo_mask] # -> (B*S*S)*(B*5+C)
     noo_target_tensor = target_tensor[noo_mask] # -> (B*S*S)*(B*5+C)
-    
+    # print(pred_tensor.shape)
     coo_pred_tensor = pred_tensor[coo_mask] # -> (B*S*S)*(B*5+C)
+    # print(coo_pred_tensor.shape)
     # print("coo_pred: ", coo_pred_tensor)
     coo_target_tensor = target_tensor[coo_mask] # -> (B*S*S)*(B*5+C)
     
     coo_target_conf = coo_target_tensor[:, 0]
     # bounding box coord 
     box_pred = torch.cat((coo_pred_tensor[..., 1:5], coo_pred_tensor[..., 6:10]), 1)
+    print(box_pred)
+    
     box_target = torch.cat((coo_target_tensor[..., 1:5], coo_target_tensor[..., 6:10]), 1)
+    print(box_target)
     # print(box_target.shape)
     box_target = box_target.contiguous().view(-1, 4)
     box_pred = box_pred.contiguous().view(-1, 4)
@@ -35,12 +40,12 @@ def calc_loss(pred_tensor, target_tensor, num_pred = 11, device = 'cpu'):
     iou_resbox = torch.zeros_like(box_pred[:, 0].squeeze(-1))
     for i in range(0, box_target.shape[0], 2):
         box_grid = box_pred[i:i+2] # x_center, y_center, w, h
-        pbox_xymin = box_grid[:, :2] - box_grid[:,2:]/2
-        pbox_xymax = box_grid[:,:2] + box_grid[:,2:]/2
+        pbox_xymin = box_grid[:, :2]/num_grid - box_grid[:,2:]/2
+        pbox_xymax = box_grid[:,:2]/num_grid + box_grid[:,2:]/2
         pbox_merge = torch.cat((pbox_xymin, pbox_xymax), 1).type(torch.FloatTensor) # xmin, ymin, xmax, ymax`
         box_gt = box_target[i:i+2] # x_center, y_center, w, h
-        gbox_xymin = box_gt[:, :2] - box_gt[:, 2:]/2
-        gbox_xymax = box_gt[:,:2] + box_gt[:, 2:]/2
+        gbox_xymin = box_gt[:, :2]/num_grid - box_gt[:, 2:]/2
+        gbox_xymax = box_gt[:,:2]/num_grid + box_gt[:, 2:]/2
         gbox_merge = torch.cat((gbox_xymin, gbox_xymax), 1).type(torch.FloatTensor)
         iou_max, index = iou(gbox_merge, pbox_merge).max(0)
         iou_resbox[i+index] = iou_max.data
@@ -56,9 +61,12 @@ def calc_loss(pred_tensor, target_tensor, num_pred = 11, device = 'cpu'):
         coo_response_mask = torch.BoolTensor(tmp)
         
     response_box = box_pred[coo_response_mask]
+    print(response_box)
     response_box[response_box < 0] = 0
     gt_box = box_target[coo_response_mask]
+    return response_box, iou_resbox
     iou_resbox = iou_resbox[coo_response_mask]
+
     coord_loss = F.mse_loss(response_box[:, :2], gt_box[:, :2]) + F.mse_loss(torch.sqrt(response_box[:,2:]), torch.sqrt(gt_box[:,2:]))
     coo_pred_conf = torch.cat((coo_pred_tensor[..., 0].unsqueeze(0).transpose(1, 0), coo_pred_tensor[..., 5].unsqueeze(0).transpose(1, 0)), 1).view(-1, 1)
     coo_pred_conf_res = coo_pred_conf[coo_response_mask].squeeze(1)
